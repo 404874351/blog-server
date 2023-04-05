@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zjc.blog.mapper.CategoryMapper">
+
+    <resultMap id="CategoryDtoMap" type="com.zjc.blog.dto.CategoryDto">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="create_time" property="createTime"/>
+        <result column="deleted" property="deleted"/>
+        <result column="article_count" property="articleCount"/>
+
+    </resultMap>
+
+    <select id="selectCategoryDtoPage" resultMap="CategoryDtoMap">
+        select
+            id,
+            name,
+            create_time,
+            deleted,
+            (
+                select count(1)
+                from article
+                where article.category_id=category.id
+            ) article_count
+        from category
+        where ${ew.sqlSegment}
+    </select>
+    
+</mapper>

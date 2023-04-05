@@ -1,0 +1,7 @@
+# Maven template
+target/
+
+# IntelliJ project files
+.idea
+*.iml
+

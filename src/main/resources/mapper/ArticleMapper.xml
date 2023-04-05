@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zjc.blog.mapper.ArticleMapper">
+
+    <resultMap id="ArticleAdminDtoMap" type="com.zjc.blog.dto.ArticleAdminDto">
+        <id column="article_id" property="id"/>
+        <result column="article_title" property="title"/>
+        <result column="article_cover_url" property="coverUrl"/>
+        <result column="article_content_url" property="contentUrl"/>
+        <result column="article_view_count" property="viewCount"/>
+        <result column="article_praise_count" property="praiseCount"/>
+        <result column="article_comment_count" property="commentCount"/>
+        <result column="article_top" property="top"/>
+        <result column="article_close_comment" property="closeComment"/>
+        <result column="article_create_time" property="createTime"/>
+        <result column="article_deleted" property="deleted"/>
+        <association property="user" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="user_id" property="id"/>
+            <result column="user_nickname" property="nickname"/>
+            <result column="user_avatar_url" property="avatarUrl"/>
+        </association>
+        <association property="category" javaType="com.zjc.blog.dto.CategoryOptionDto" >
+            <id column="category_id" property="id"/>
+            <result column="category_name" property="name"/>
+        </association>
+        <collection property="tagList" ofType="com.zjc.blog.dto.TagOptionDto">
+            <id column="tag_id" property="id"/>
+            <result column="tag_name" property="name"/>
+        </collection>
+
+    </resultMap>
+
+    <resultMap id="ArticleDtoMap" type="com.zjc.blog.dto.ArticleDto">
+        <id column="article_id" property="id"/>
+        <result column="article_title" property="title"/>
+        <result column="article_description" property="description"/>
+        <result column="article_cover_url" property="coverUrl"/>
+        <result column="article_content_url" property="contentUrl"/>
+        <result column="article_view_count" property="viewCount"/>
+        <result column="article_praise_count" property="praiseCount"/>
+        <result column="article_comment_count" property="commentCount"/>
+        <result column="article_top" property="top"/>
+        <result column="article_close_comment" property="closeComment"/>
+        <result column="article_praise_status" property="praiseStatus"/>
+        <result column="article_create_time" property="createTime"/>
+        <association property="user" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="user_id" property="id"/>
+            <result column="user_nickname" property="nickname"/>
+            <result column="user_avatar_url" property="avatarUrl"/>
+        </association>
+        <association property="category" javaType="com.zjc.blog.dto.CategoryOptionDto" >
+            <id column="category_id" property="id"/>
+            <result column="category_name" property="name"/>
+        </association>
+        <collection property="tagList" ofType="com.zjc.blog.dto.TagOptionDto">
+            <id column="tag_id" property="id"/>
+            <result column="tag_name" property="name"/>
+        </collection>
+
+    </resultMap>
+
+    <resultMap id="ArticleUpdateDtoMap" type="com.zjc.blog.dto.ArticleUpdateDto">
+        <id column="article_id" property="id"/>
+        <result column="article_title" property="title"/>
+        <result column="article_description" property="description"/>
+        <result column="article_cover_url" property="coverUrl"/>
+        <result column="article_content_url" property="contentUrl"/>
+        <result column="article_top" property="top"/>
+        <result column="article_close_comment" property="closeComment"/>
+        <association property="category" javaType="com.zjc.blog.dto.CategoryOptionDto" >
+            <id column="category_id" property="id"/>
+            <result column="category_name" property="name"/>
+        </association>
+        <collection property="tagList" ofType="com.zjc.blog.dto.TagOptionDto">
+            <id column="tag_id" property="id"/>
+            <result column="tag_name" property="name"/>
+        </collection>
+
+    </resultMap>
+
+
+    <select id="selectArticleAdminDtoPage" resultMap="ArticleAdminDtoMap">
+        select
+            auc.article_id            article_id           ,
+            auc.article_title         article_title        ,
+            auc.article_cover_url     article_cover_url    ,
+            auc.article_content_url   article_content_url  ,
+            auc.article_view_count    article_view_count   ,
+            auc.article_praise_count  article_praise_count ,
+            auc.article_comment_count article_comment_count,
+            auc.article_top           article_top          ,
+            auc.article_close_comment article_close_comment,
+            auc.article_create_time   article_create_time  ,
+            auc.article_deleted       article_deleted      ,
+
+            auc.user_id               user_id              ,
+            auc.user_nickname         user_nickname        ,
+            auc.user_avatar_url       user_avatar_url      ,
+
+            auc.category_id           category_id          ,
+            auc.category_name         category_name        ,
+
+            tag.id                    tag_id               ,
+            tag.name                  tag_name
+        from (
+            select
+                article.id            article_id           ,
+                article.title         article_title        ,
+                article.cover_url     article_cover_url    ,
+                article.content_url   article_content_url  ,
+                article.view_count    article_view_count   ,
+                article.top           article_top          ,
+                article.close_comment article_close_comment,
+                article.create_time   article_create_time  ,
+                article.deleted       article_deleted      ,
+
+                user.id               user_id              ,
+                user.nickname         user_nickname        ,
+                user.avatar_url       user_avatar_url      ,
+
+                category.id           category_id          ,
+                category.name         category_name        ,
+                (
+                    select count(1)
+                    from relation_user_article rua
+                    where article.id=rua.article_id
+                ) article_praise_count                     ,
+                (
+                    select count(1)
+                    from comment
+                    where article.id=comment.article_id
+                ) article_comment_count
+
+            from article, user, category
+            where
+                article.user_id=user.id
+                and article.category_id=category.id
+                and ${ew.sqlSegment}
+                <if test="tagId != null">
+                    and article.id in (
+                        select article_id
+                        from relation_article_tag
+                        where tag_id=#{tagId}
+                    )
+                </if>
+            limit #{offset}, #{size}
+        ) auc
+        left join relation_article_tag rat on auc.article_id=rat.article_id
+        left join tag on tag.id=rat.tag_id
+
+    </select>
+
+    <select id="countArticleAdminDto" resultType="java.lang.Long">
+        select count(distinct article.id)
+        from (article, user, category)
+        left join relation_article_tag rat on article.id=rat.article_id
+        left join tag on tag.id=rat.tag_id
+        where
+            article.user_id=user.id
+            and article.category_id=category.id
+            and ${ew.sqlSegment}
+    </select>
+
+    <select id="selectArticleDtoPage" resultMap="ArticleDtoMap">
+        select
+            auc.article_id            article_id           ,
+            auc.article_title         article_title        ,
+            auc.article_description   article_description  ,
+            auc.article_cover_url     article_cover_url    ,
+            auc.article_content_url   article_content_url  ,
+            auc.article_view_count    article_view_count   ,
+            auc.article_praise_count  article_praise_count ,
+            auc.article_comment_count article_comment_count,
+            auc.article_top           article_top          ,
+            auc.article_close_comment article_close_comment,
+            auc.article_create_time   article_create_time  ,
+
+            auc.user_id               user_id              ,
+            auc.user_nickname         user_nickname        ,
+            auc.user_avatar_url       user_avatar_url      ,
+
+            auc.category_id           category_id          ,
+            auc.category_name         category_name        ,
+
+            tag.id                    tag_id               ,
+            tag.name                  tag_name
+        from (
+            select
+                article.id            article_id           ,
+                article.title         article_title        ,
+                article.description   article_description  ,
+                article.cover_url     article_cover_url    ,
+                article.content_url   article_content_url  ,
+                article.view_count    article_view_count   ,
+                article.top           article_top          ,
+                article.close_comment article_close_comment,
+                article.create_time   article_create_time  ,
+
+                user.id               user_id              ,
+                user.nickname         user_nickname        ,
+                user.avatar_url       user_avatar_url      ,
+
+                category.id           category_id          ,
+                category.name         category_name        ,
+                (
+                    select count(1)
+                    from relation_user_article rua
+                    where article.id=rua.article_id
+                ) article_praise_count                     ,
+                (
+                    select count(1)
+                    from comment
+                    where article.id=comment.article_id
+                ) article_comment_count
+
+            from article, user, category
+            where
+                article.deleted=0
+                and article.user_id=user.id
+                and article.category_id=category.id
+                and ${ew.sqlSegment}
+            limit #{offset}, #{size}
+        ) auc
+        left join relation_article_tag rat on auc.article_id=rat.article_id
+        left join tag on tag.id=rat.tag_id
+
+    </select>
+
+    <select id="countArticleDto" resultType="java.lang.Long">
+        select count(distinct article.id)
+        from (article, user, category)
+        left join relation_article_tag rat on article.id=rat.article_id
+        left join tag on tag.id=rat.tag_id
+        where
+            article.deleted=0
+            and article.user_id=user.id
+            and article.category_id=category.id
+            and ${ew.sqlSegment}
+    </select>
+
+    <select id="selectArticleDtoById" resultMap="ArticleDtoMap">
+        select
+            auc.article_id            article_id           ,
+            auc.article_title         article_title        ,
+            auc.article_description   article_description  ,
+            auc.article_cover_url     article_cover_url    ,
+            auc.article_content_url   article_content_url  ,
+            auc.article_view_count    article_view_count   ,
+            auc.article_praise_count  article_praise_count ,
+            auc.article_comment_count article_comment_count,
+            auc.article_top           article_top          ,
+            auc.article_close_comment article_close_comment,
+
+            <if test="userId != null">
+            (
+                select count(1) > 0
+                from relation_user_article
+                where
+                relation_user_article.article_id=#{id}
+                and relation_user_article.user_id=#{userId}
+            ) article_praise_status                        ,
+            </if>
+
+            auc.article_create_time   article_create_time  ,
+
+            auc.user_id               user_id              ,
+            auc.user_nickname         user_nickname        ,
+            auc.user_avatar_url       user_avatar_url      ,
+
+            auc.category_id           category_id          ,
+            auc.category_name         category_name        ,
+
+            tag.id                    tag_id               ,
+            tag.name                  tag_name
+        from (
+            select
+                article.id            article_id           ,
+                article.title         article_title        ,
+                article.description   article_description  ,
+                article.cover_url     article_cover_url    ,
+                article.content_url   article_content_url  ,
+                article.view_count    article_view_count   ,
+                article.top           article_top          ,
+                article.close_comment article_close_comment,
+                article.create_time   article_create_time  ,
+
+                user.id               user_id              ,
+                user.nickname         user_nickname        ,
+                user.avatar_url       user_avatar_url      ,
+
+                category.id           category_id          ,
+                category.name         category_name        ,
+                (
+                    select count(1)
+                    from relation_user_article rua
+                    where article.id=rua.article_id
+                ) article_praise_count                     ,
+                (
+                    select count(1)
+                    from comment
+                    where article.id=comment.article_id
+                ) article_comment_count
+            from article, user, category
+            where
+                article.deleted=0
+                and article.id=#{id}
+                and article.user_id=user.id
+                and article.category_id=category.id
+        ) auc
+        left join relation_article_tag rat on auc.article_id=rat.article_id
+        left join tag on tag.id=rat.tag_id
+
+    </select>
+
+    <select id="sumViewCount" resultType="java.lang.Long">
+        select sum(article.view_count)
+        from article
+    </select>
+
+    <select id="selectArticleUpdateDtoById" resultMap="ArticleUpdateDtoMap">
+        select
+            ac.article_id             article_id           ,
+            ac.article_title          article_title        ,
+            ac.article_description    article_description  ,
+            ac.article_cover_url      article_cover_url    ,
+            ac.article_content_url    article_content_url  ,
+            ac.article_top            article_top          ,
+            ac.article_close_comment  article_close_comment,
+            ac.category_id            category_id          ,
+            ac.category_name          category_name        ,
+
+            tag.id                    tag_id               ,
+            tag.name                  tag_name
+        from (
+            select
+                article.id            article_id           ,
+                article.title         article_title        ,
+                article.description   article_description  ,
+                article.cover_url     article_cover_url    ,
+                article.content_url   article_content_url  ,
+                article.top           article_top          ,
+                article.close_comment article_close_comment,
+
+                category.id           category_id          ,
+                category.name         category_name
+            from article, category
+            where
+                article.id=#{id}
+                and article.category_id=category.id
+        ) ac
+        left join relation_article_tag rat on ac.article_id=rat.article_id
+        left join tag on tag.id=rat.tag_id
+
+    </select>
+
+    <select id="selectIdListByTagName" resultType="java.lang.Integer">
+        select distinct article_id
+        from relation_article_tag rat, tag
+        where
+            rat.tag_id=tag.id
+            and tag.name like concat('%',#{tagName},'%')
+    </select>
+
+</mapper>

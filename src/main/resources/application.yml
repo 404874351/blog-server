@@ -1,0 +1,70 @@
+server:
+  # 运行端口
+  port: 8088
+
+spring:
+  # 应用名
+  application:
+    name: blog-server
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: 'jdbc:mysql://<mysql-ip>:<mysql-port>/<db-name>?useUnicode=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT'
+    username: <mysql-username>
+    password: <mysql-password>
+    type: com.alibaba.druid.pool.DruidDataSource
+
+  # json时间调整
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+  # redis配置
+  redis:
+    host: <redis-ip>
+    port: <redis-port>
+    password: <redis-password>
+    timeout: 30000ms
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+# mp配置
+mybatis-plus:
+  # mapper.xml配置文件路径
+  mapper-locations: classpath:mapper/*.xml
+#  global-config:
+#    db-config:
+      # 逻辑删除配置
+#      logic-delete-field: deleted
+#      logic-delete-value: 1
+#      logic-not-delete-value: 0
+
+
+# 自定义jwt配置
+auth:
+  jwt:
+    # token过期时间，单位s，为避免操作繁琐，本项目取3h
+    max-age: 10800
+    # 32位签名密钥，必须高度保密！
+    secret: <jwt-secret>
+
+# 七牛云配置
+qiniu:
+  access-key: <qiniu-access-key>
+  secret-key: <qiniu-secret-key>
+  bucket: <qiniu-bucket>
+
+# 阿里云短信服务
+aliyun-sms:
+  access-key-id: <sms-access-key>
+  access-key-secret: <sms-secret-key>
+  sign-name: <sms-sign-name>
+  template-code: <sms-template-code>
+
+
+
+

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zjc.blog.mapper.MessageMapper">
+    <resultMap id="MessageAdminDtoMap" type="com.zjc.blog.dto.MessageAdminDto">
+        <id column="message_id" property="id"/>
+        <result column="content" property="content"/>
+        <result column="message_create_time" property="createTime"/>
+        <result column="message_deleted" property="deleted"/>
+        <association property="user" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="user_id" property="id"/>
+            <result column="nickname" property="nickname"/>
+            <result column="avatar_url" property="avatarUrl"/>
+        </association>
+
+    </resultMap>
+
+    <resultMap id="MessageDtoMap" type="com.zjc.blog.dto.MessageDto">
+        <id column="message_id" property="id"/>
+        <result column="content" property="content"/>
+        <result column="message_create_time" property="createTime"/>
+        <association property="user" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="user_id" property="id"/>
+            <result column="nickname" property="nickname"/>
+            <result column="avatar_url" property="avatarUrl"/>
+        </association>
+
+    </resultMap>
+
+    <select id="selectMessageAdminDtoPage" resultMap="MessageAdminDtoMap">
+        select
+            message.id message_id,
+            content,
+            message.create_time message_create_time,
+            message.deleted message_deleted,
+            user.id user_id,
+            nickname,
+            avatar_url
+        from message
+        left join user on message.user_id=user.id
+        where ${ew.sqlSegment}
+
+    </select>
+
+    <select id="selectMessageDtoPage" resultMap="MessageDtoMap">
+        select
+            message.id message_id,
+            content,
+            message.create_time message_create_time,
+            user.id user_id,
+            nickname,
+            avatar_url
+        from message
+        left join user on message.user_id=user.id
+        where ${ew.sqlSegment}
+
+    </select>
+</mapper>

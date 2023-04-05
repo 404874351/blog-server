@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zjc.blog.mapper.CommentMapper">
+    
+    <resultMap id="CommentAdminDtoMap" type="com.zjc.blog.dto.CommentAdminDto">
+        <id column="comment_id" property="id"/>
+        <result column="comment_content" property="content"/>
+        <result column="comment_top" property="top"/>
+        <result column="comment_create_time" property="createTime"/>
+        <result column="comment_deleted" property="deleted"/>
+        <result column="article_id" property="articleId"/>
+        <result column="article_title" property="articleTitle"/>
+
+        <association property="user" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="comment_user_id" property="id"/>
+            <result column="comment_user_nickname" property="nickname"/>
+            <result column="comment_user_avatar_url" property="avatarUrl"/>
+        </association>
+        <association property="replyUser" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="reply_user_id" property="id"/>
+            <result column="reply_user_nickname" property="nickname"/>
+            <result column="reply_user_avatar_url" property="avatarUrl"/>
+        </association>
+
+    </resultMap>
+
+    <resultMap id="CommentDtoMap" type="com.zjc.blog.dto.CommentDto">
+        <id column="comment_id" property="id"/>
+        <result column="comment_content" property="content"/>
+        <result column="comment_parent_id" property="parentId"/>
+        <result column="comment_top" property="top"/>
+        <result column="comment_create_time" property="createTime"/>
+        <result column="comment_praise_count" property="praiseCount"/>
+        <result column="comment_praise_status" property="praiseStatus"/>
+        <result column="comment_children_count" property="childrenCount"/>
+
+        <association property="user" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="comment_user_id" property="id"/>
+            <result column="comment_user_nickname" property="nickname"/>
+            <result column="comment_user_avatar_url" property="avatarUrl"/>
+        </association>
+        <association property="replyUser" javaType="com.zjc.blog.dto.UserBaseInfoDto" >
+            <id column="reply_user_id" property="id"/>
+            <result column="reply_user_nickname" property="nickname"/>
+            <result column="reply_user_avatar_url" property="avatarUrl"/>
+        </association>
+
+    </resultMap>
+
+    <select id="selectCommentAdminDtoPage" resultMap="CommentAdminDtoMap">
+        select
+            comment.id               comment_id             ,
+            comment.content          comment_content        ,
+            comment.top              comment_top            ,
+            comment.create_time      comment_create_time    ,
+            comment.deleted          comment_deleted        ,
+
+            article.id               article_id             ,
+            article.title            article_title          ,
+
+            comment_user.id          comment_user_id        ,
+            comment_user.nickname    comment_user_nickname  ,
+            comment_user.avatar_url  comment_user_avatar_url,
+
+            reply_user.id            reply_user_id          ,
+            reply_user.nickname      reply_user_nickname    ,
+            reply_user.avatar_url    reply_user_avatar_url
+        from comment
+        left join article on comment.article_id=article.id
+        left join user comment_user on comment.user_id=comment_user.id
+        left join user reply_user on comment.reply_user_id=reply_user.id
+        where ${ew.sqlSegment}
+
+    </select>
+
+    <select id="selectCommentDtoPage" resultMap="CommentDtoMap">
+        select
+            comment.id               comment_id             ,
+            comment.content          comment_content        ,
+            comment.parent_id        comment_parent_id      ,
+            comment.top              comment_top            ,
+            comment.create_time      comment_create_time    ,
+            (
+                select count(1)
+                from relation_user_comment ruc
+                where ruc.comment_id=comment.id
+            ) comment_praise_count                          ,
+
+            <if test="userId != null">
+                (
+                    select count(1) > 0
+                    from relation_user_comment ruc
+                    where
+                        ruc.comment_id=comment.id
+                        and ruc.user_id=#{userId}
+                ) comment_praise_status                     ,
+            </if>
+
+            (
+                select count(1)
+                from comment c1
+                where
+                    c1.parent_id=comment.id
+                    and c1.deleted=0
+            ) comment_children_count                        ,
+
+            comment_user.id          comment_user_id        ,
+            comment_user.nickname    comment_user_nickname  ,
+            comment_user.avatar_url  comment_user_avatar_url,
+
+            reply_user.id            reply_user_id          ,
+            reply_user.nickname      reply_user_nickname    ,
+            reply_user.avatar_url    reply_user_avatar_url
+
+        from comment
+        left join user comment_user on comment.user_id=comment_user.id
+        left join user reply_user on comment.reply_user_id=reply_user.id
+        where
+            comment.deleted=0
+            and ${ew.sqlSegment}
+    </select>
+
+    <select id="selectChildrenCommentDtoList" resultMap="CommentDtoMap">
+        select *
+        from (
+            select
+                *,
+                row_number() over (
+                    partition by comment_parent_id
+                    order by comment_praise_count desc, comment_create_time asc
+                ) row_num
+            from (
+                select
+                    comment.id               comment_id             ,
+                    comment.content          comment_content        ,
+                    comment.parent_id        comment_parent_id      ,
+                    comment.top              comment_top            ,
+                    comment.create_time      comment_create_time    ,
+                    (
+                        select count(1)
+                        from relation_user_comment ruc
+                        where ruc.comment_id=comment.id
+                    ) comment_praise_count                          ,
+
+                    <if test="userId != null">
+                        (
+                            select count(1) > 0
+                            from relation_user_comment ruc
+                            where
+                                ruc.comment_id=comment.id
+                                and ruc.user_id=#{userId}
+                        ) comment_praise_status                     ,
+                    </if>
+
+                    comment_user.id          comment_user_id        ,
+                    comment_user.nickname    comment_user_nickname  ,
+                    comment_user.avatar_url  comment_user_avatar_url,
+
+                    reply_user.id            reply_user_id          ,
+                    reply_user.nickname      reply_user_nickname    ,
+                    reply_user.avatar_url    reply_user_avatar_url
+
+                from comment
+                left join user comment_user on comment.user_id=comment_user.id
+                left join user reply_user on comment.reply_user_id=reply_user.id
+                where
+                    comment.deleted=0
+                    and ${ew.sqlSegment}
+            ) t2
+        ) t1
+        where 4>row_num
+
+    </select>
+
+    <select id="selectCommentDtoById" resultMap="CommentDtoMap">
+        select
+            comment.id               comment_id             ,
+            comment.content          comment_content        ,
+            comment.parent_id        comment_parent_id      ,
+            comment.top              comment_top            ,
+            comment.create_time      comment_create_time    ,
+            (
+                select count(1)
+                from relation_user_comment ruc
+                where ruc.comment_id=comment.id
+            ) comment_praise_count                          ,
+
+            (
+                select count(1)
+                from comment c1
+                where
+                    c1.parent_id=comment.id
+                    and c1.deleted=0
+            ) comment_children_count                        ,
+
+            comment_user.id          comment_user_id        ,
+            comment_user.nickname    comment_user_nickname  ,
+            comment_user.avatar_url  comment_user_avatar_url,
+
+            reply_user.id            reply_user_id          ,
+            reply_user.nickname      reply_user_nickname    ,
+            reply_user.avatar_url    reply_user_avatar_url
+
+        from comment
+        left join user comment_user on comment.user_id=comment_user.id
+        left join user reply_user on comment.reply_user_id=reply_user.id
+        where comment.id=#{id} and comment.deleted=0
+    </select>
+
+</mapper>

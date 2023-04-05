@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zjc.blog.mapper.PermissionMapper">
+
+    <resultMap id="permissionRoleDtoMap" type="com.zjc.blog.dto.PermissionRoleDto">
+        <id column="permission_id" property="id"/>
+        <result column="permission_url" property="url"/>
+        <result column="permission_anonymous" property="anonymous"/>
+        <result column="permission_deleted" property="deleted"/>
+        <collection property="roleList" ofType="com.zjc.blog.entity.Role">
+            <id column="role_id" property="id"/>
+            <result column="role_code" property="code"/>
+            <result column="role_deleted" property="deleted"/>
+        </collection>
+    </resultMap>
+
+    <select id="permissionRoleDtoList" resultMap="permissionRoleDtoMap">
+        select
+            p.id        permission_id,
+            p.url       permission_url,
+            p.anonymous permission_anonymous,
+            p.deleted   permission_deleted,
+            r.id        role_id,
+            r.code      role_code,
+            r.deleted   role_deleted
+        from
+            permission p
+        left join relation_role_permission rrp on p.id=rrp.permission_id
+        left join role r on r.id=rrp.role_id
+        where
+            p.type=0
+            and p.url is not null
+    </select>
+
+</mapper>
